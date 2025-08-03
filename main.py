@@ -44,6 +44,14 @@ class ExpenseTracker:
         cursor = self.conn.execute("SELECT * FROM expenses WHERE date BETWEEN ? AND ?", (start_date, end_date))
         return cursor.fetchall()
 
+    def get_total_expenses(self):
+        cursor = self.conn.execute("SELECT SUM(amount) FROM expenses")
+        return cursor.fetchone()[0] or 0
+
+    def get_total_by_category(self):
+        cursor = self.conn.execute("SELECT category, SUM(amount) FROM expenses GROUP BY category")
+        return cursor.fetchall()
+
 
 def main():
     tracker = ExpenseTracker()
@@ -69,6 +77,13 @@ def main():
     print("\nExpenses between 2025-08-01 and 2025-08-02:")
     for e in tracker.get_expenses_by_date_range("2025-08-01", "2025-08-02"):
         print(e)
+
+    print("\nTotal expenses:")
+    print(tracker.get_total_expenses())
+
+    print("\nTotal expenses by category:")
+    for c in tracker.get_total_by_category():
+        print(c)
 
 
 if __name__ == "__main__":
