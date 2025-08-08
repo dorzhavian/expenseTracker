@@ -53,37 +53,62 @@ class ExpenseTracker:
         return cursor.fetchall()
 
 
+def run_cli(tracker: ExpenseTracker):
+    while True:
+        print("\nExpense Tracker Menu:")
+        print("1. Add expense")
+        print("2. Show all expenses")
+        print("3. Filter by category")
+        print("4. Filter by date range")
+        print("5. Show summary")
+        print("6. Exit")
+
+        choice = input("Choose an option: ")
+
+        if choice == "1":
+            amount = float(input("Amount: "))
+            category = input("Category: ")
+            description = input("Description: ")
+            date = input("Date (YYYY-MM-DD, press Enter for today): ")
+            expense = Expense(amount, category, description, date if date else None)
+            tracker.add_expense(expense)
+            print("Expense added.")
+
+        elif choice == "2":
+            expenses = tracker.get_all_expenses()
+            for e in expenses:
+                print(e)
+
+        elif choice == "3":
+            category = input("Enter category: ")
+            expenses = tracker.get_expenses_by_category(category)
+            for e in expenses:
+                print(e)
+
+        elif choice == "4":
+            start_date = input("Start date (YYYY-MM-DD): ")
+            end_date = input("End date (YYYY-MM-DD): ")
+            expenses = tracker.get_expenses_by_date_range(start_date, end_date)
+            for e in expenses:
+                print(e)
+
+        elif choice == "5":
+            print(f"Total expenses: {tracker.get_total_expenses()}")
+            print("Total by category:")
+            for row in tracker.get_total_by_category():
+                print(f"{row[0]}: {row[1]}")
+
+        elif choice == "6":
+            print("Goodbye!")
+            break
+
+        else:
+            print("Invalid choice. Try again.")
+
+
 def main():
     tracker = ExpenseTracker()
-
-    expense1 = Expense(100, "Transport", "Bus ticket")
-    expense2 = Expense(50, "Food", "Pizza dinner")
-    expense3 = Expense(20, "Food", "Coffee", "2025-08-01")
-    expense4 = Expense(200, "Shopping", "New shoes", "2025-08-02")
-
-    tracker.add_expense(expense1)
-    tracker.add_expense(expense2)
-    tracker.add_expense(expense3)
-    tracker.add_expense(expense4)
-
-    print("All expenses:")
-    for e in tracker.get_all_expenses():
-        print(e)
-
-    print("\nExpenses in category 'Food':")
-    for e in tracker.get_expenses_by_category("Food"):
-        print(e)
-
-    print("\nExpenses between 2025-08-01 and 2025-08-02:")
-    for e in tracker.get_expenses_by_date_range("2025-08-01", "2025-08-02"):
-        print(e)
-
-    print("\nTotal expenses:")
-    print(tracker.get_total_expenses())
-
-    print("\nTotal expenses by category:")
-    for c in tracker.get_total_by_category():
-        print(c)
+    run_cli(tracker)
 
 
 if __name__ == "__main__":
