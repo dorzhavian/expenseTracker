@@ -104,6 +104,20 @@ def get_valid_id_or_back(tracker: ExpenseTracker):
         print("ID not found. Try again or -1 to back.")
 
 
+def get_valid_date_or_back(prompt):
+    while True:
+        date_str = input_or_cancel(prompt)
+        if date_str is None:
+            return None
+        if date_str == "":
+            return ""
+        try:
+            datetime.strptime(date_str, "%Y-%m-%d")
+            return date_str
+        except ValueError:
+            print("Invalid date format. Please use YYYY-MM-DD.")
+
+
 def run_cli(tracker: ExpenseTracker):
     while True:
         print("\nExpense Tracker Menu:")
@@ -135,7 +149,7 @@ def run_cli(tracker: ExpenseTracker):
             description = input_or_cancel("Description (-1 to cancel): ")
             if description is None:
                 continue
-            date = input_or_cancel("Date YYYY-MM-DD (Enter for today, -1 to cancel): ")
+            date = get_valid_date_or_back("Date YYYY-MM-DD (Enter for today, -1 to cancel): ")
             if date is None:
                 continue
             expense = Expense(amount, category, description, date if date else None)
@@ -152,10 +166,10 @@ def run_cli(tracker: ExpenseTracker):
             print_expenses(tracker.get_expenses_by_category(category))
 
         elif choice == "4":
-            start_date = input_or_cancel("Start date YYYY-MM-DD (-1 to cancel): ")
+            start_date = get_valid_date_or_back("Start date YYYY-MM-DD (-1 to cancel): ")
             if start_date is None:
                 continue
-            end_date = input_or_cancel("End date YYYY-MM-DD (-1 to cancel): ")
+            end_date = get_valid_date_or_back("End date YYYY-MM-DD (-1 to cancel): ")
             if end_date is None:
                 continue
             print_expenses(tracker.get_expenses_by_date_range(start_date, end_date))
@@ -170,23 +184,30 @@ def run_cli(tracker: ExpenseTracker):
             expense_id = get_valid_id_or_back(tracker)
             if expense_id is None:
                 continue
-            amount = input_or_cancel("New amount (-1 to cancel): ")
+            existing = tracker.get_expense_by_id(expense_id)
+            amount = input_or_cancel(f"New amount (current {existing[1]}, -1 to cancel): ")
             if amount is None:
                 continue
             try:
-                amount = float(amount)
+                amount = float(amount) if amount != "" else existing[1]
             except ValueError:
                 print("Amount must be a number.")
                 continue
-            category = input_or_cancel("New category (-1 to cancel): ")
+            category = input_or_cancel(f"New category (current {existing[2]}, -1 to cancel): ")
             if category is None:
                 continue
-            description = input_or_cancel("New description (-1 to cancel): ")
+            if category == "":
+                category = existing[2]
+            description = input_or_cancel(f"New description (current {existing[3]}, -1 to cancel): ")
             if description is None:
                 continue
-            date = input_or_cancel("New date YYYY-MM-DD (-1 to cancel): ")
+            if description == "":
+                description = existing[3]
+            date = get_valid_date_or_back(f"New date (current {existing[4]}, -1 to cancel): ")
             if date is None:
                 continue
+            if date == "":
+                date = existing[4]
             tracker.update_expense(expense_id, amount, category, description, date)
             print("Expense updated.")
 
