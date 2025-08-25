@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template  # added render_template
 from flask_cors import CORS
 
 try:
@@ -17,6 +17,15 @@ def home():
     status = "ok" if tracker else "main.py import failed"
     return jsonify({"service": "ExpenseTracker API", "status": status}), 200
 
+# ---- HTML dashboard ----
+@app.route("/dashboard", methods=["GET"])
+def dashboard():
+    if not tracker:
+        return render_template("index.html", expenses=[])
+    expenses = tracker.get_all_expenses()
+    return render_template("index.html", expenses=expenses)
+
+# ---- JSON API ----
 @app.route("/expenses", methods=["GET"])
 def get_expenses():
     if not tracker:
@@ -72,5 +81,5 @@ def delete_expense(expense_id):
     return jsonify({"message": "Expense deleted"}), 200
 
 if __name__ == "__main__":
-    print(">>> LOADING APP.PY (basic API)")
+    print(">>> LOADING APP.PY (basic API + dashboard)")
     app.run(debug=True)
