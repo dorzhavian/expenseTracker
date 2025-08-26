@@ -1,5 +1,6 @@
-from flask import Flask, request, jsonify, render_template  # added render_template
+from flask import Flask, request, jsonify, render_template, redirect, url_for
 from flask_cors import CORS
+from datetime import datetime
 
 try:
     from main import ExpenseTracker, Expense
@@ -17,7 +18,6 @@ def home():
     status = "ok" if tracker else "main.py import failed"
     return jsonify({"service": "ExpenseTracker API", "status": status}), 200
 
-# ---- HTML dashboard ----
 @app.route("/dashboard", methods=["GET"])
 def dashboard():
     if not tracker:
@@ -25,7 +25,34 @@ def dashboard():
     expenses = tracker.get_all_expenses()
     return render_template("index.html", expenses=expenses)
 
-# ---- JSON API ----
+@app.post("/add")
+def add_from_form():
+    if not tracker:
+        return redirect(url_for("dashboard"))
+
+    amount = (request.form.get("amount") or "").strip()
+    category = (request.form.get("category") or "").strip()
+    description = (request.form.get("description") or "").strip()
+    date = (request.form.get("date") or "").strip()
+
+    try:
+        amount_val = float(amount)
+    except ValueError:
+        return redirect(url_for("dashboard"))
+
+    if date:
+        try:
+            datetime.strptime(date, "%Y-%m-%d")
+        except ValueError:
+            return redirect(url_for("dashboard"))
+        date_val = date
+    else:
+        date_val = None
+
+    exp = Expense(amount_val, category, description, date_val)
+    tracker.add_expense(exp)
+    return redirect(url_for("dashboard"))
+
 @app.route("/expenses", methods=["GET"])
 def get_expenses():
     if not tracker:
@@ -81,5 +108,5 @@ def delete_expense(expense_id):
     return jsonify({"message": "Expense deleted"}), 200
 
 if __name__ == "__main__":
-    print(">>> LOADING APP.PY (basic API + dashboard)")
+    print(">>> LOADING APP.PY (basic API + dashboard + add form)")
     app.run(debug=True)
