@@ -1,8 +1,10 @@
 {% extends "base.html" %}
 {% block content %}
-<h2 class="mb-3">Expenses</h2>
+<div class="d-flex align-items-center justify-content-between mb-3">
+  <h2 class="mb-0">Expenses</h2>
+  <span class="text-muted small">{{ expenses|length }} items</span>
+</div>
 
-<!-- Add Expense Form -->
 <form method="post" action="{{ url_for('add_from_form') }}" class="row g-2 align-items-end mb-4">
   <div class="col-12 col-md-2">
     <label class="form-label">Amount</label>
@@ -41,7 +43,7 @@
       <td>{{ e[0] }}</td>
       <td>{{ e[4] }}</td>
       <td>{{ "%.2f"|format(e[1]) }}</td>
-      <td>{{ e[2] }}</td>
+      <td><span class="badge text-bg-secondary">{{ e[2] }}</span></td>
       <td>{{ e[3] }}</td>
     </tr>
     {% else %}

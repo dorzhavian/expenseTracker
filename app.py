@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, render_template, redirect, url_for
+from flask import Flask, request, jsonify, render_template, redirect, url_for, flash
 from flask_cors import CORS
 from datetime import datetime
 
@@ -9,6 +9,7 @@ except Exception as e:
     ExpenseTracker = Expense = None
 
 app = Flask(__name__)
+app.config["SECRET_KEY"] = "dev-secret"
 CORS(app)
 
 tracker = ExpenseTracker() if ExpenseTracker else None
@@ -18,6 +19,7 @@ def home():
     status = "ok" if tracker else "main.py import failed"
     return jsonify({"service": "ExpenseTracker API", "status": status}), 200
 
+# ---- HTML dashboard ----
 @app.route("/dashboard", methods=["GET"])
 def dashboard():
     if not tracker:
@@ -28,6 +30,7 @@ def dashboard():
 @app.post("/add")
 def add_from_form():
     if not tracker:
+        flash("Backend not connected.", "danger")
         return redirect(url_for("dashboard"))
 
     amount = (request.form.get("amount") or "").strip()
@@ -38,21 +41,25 @@ def add_from_form():
     try:
         amount_val = float(amount)
     except ValueError:
+        flash("Amount must be a number.", "danger")
         return redirect(url_for("dashboard"))
 
     if date:
         try:
             datetime.strptime(date, "%Y-%m-%d")
         except ValueError:
+            flash("Invalid date format. Use YYYY-MM-DD.", "danger")
             return redirect(url_for("dashboard"))
         date_val = date
     else:
         date_val = None
 
     exp = Expense(amount_val, category, description, date_val)
-    tracker.add_expense(exp)
+    new_id = tracker.add_expense(exp)
+    flash(f"Expense #{new_id} added.", "success")
     return redirect(url_for("dashboard"))
 
+# ---- JSON API ----
 @app.route("/expenses", methods=["GET"])
 def get_expenses():
     if not tracker:
@@ -108,5 +115,5 @@ def delete_expense(expense_id):
     return jsonify({"message": "Expense deleted"}), 200
 
 if __name__ == "__main__":
-    print(">>> LOADING APP.PY (basic API + dashboard + add form)")
+    print(">>> LOADING APP.PY (basic API + dashboard + flash + add form)")
     app.run(debug=True)
