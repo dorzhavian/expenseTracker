@@ -59,6 +59,62 @@ def add_from_form():
     flash(f"Expense #{new_id} added.", "success")
     return redirect(url_for("dashboard"))
 
+@app.get("/edit/<int:expense_id>")
+def edit_page(expense_id):
+    if not tracker:
+        flash("Backend not connected.", "danger")
+        return redirect(url_for("dashboard"))
+    existing = tracker.get_expense_by_id(expense_id)
+    if not existing:
+        flash("Expense not found.", "danger")
+        return redirect(url_for("dashboard"))
+    return render_template("edit.html", e=existing)
+
+@app.post("/edit/<int:expense_id>")
+def edit_save(expense_id):
+    if not tracker:
+        flash("Backend not connected.", "danger")
+        return redirect(url_for("dashboard"))
+
+    existing = tracker.get_expense_by_id(expense_id)
+    if not existing:
+        flash("Expense not found.", "danger")
+        return redirect(url_for("dashboard"))
+
+    amount = (request.form.get("amount") or str(existing[1])).strip()
+    category = (request.form.get("category") or existing[2]).strip()
+    description = (request.form.get("description") or existing[3]).strip()
+    date = (request.form.get("date") or existing[4]).strip()
+
+    try:
+        amount_val = float(amount)
+    except ValueError:
+        flash("Amount must be a number.", "danger")
+        return redirect(url_for("edit_page", expense_id=expense_id))
+
+    try:
+        datetime.strptime(date, "%Y-%m-%d")
+    except ValueError:
+        flash("Invalid date format. Use YYYY-MM-DD.", "danger")
+        return redirect(url_for("edit_page", expense_id=expense_id))
+
+    tracker.update_expense(expense_id, amount_val, category, description, date)
+    flash(f"Expense #{expense_id} updated.", "success")
+    return redirect(url_for("dashboard"))
+
+@app.post("/delete/<int:expense_id>")
+def delete_from_form(expense_id):
+    if not tracker:
+        flash("Backend not connected.", "danger")
+        return redirect(url_for("dashboard"))
+    existing = tracker.get_expense_by_id(expense_id)
+    if not existing:
+        flash("Expense not found.", "danger")
+        return redirect(url_for("dashboard"))
+    tracker.delete_expense(expense_id)
+    flash(f"Expense #{expense_id} deleted.", "success")
+    return redirect(url_for("dashboard"))
+
 # ---- JSON API ----
 @app.route("/expenses", methods=["GET"])
 def get_expenses():
@@ -115,5 +171,5 @@ def delete_expense(expense_id):
     return jsonify({"message": "Expense deleted"}), 200
 
 if __name__ == "__main__":
-    print(">>> LOADING APP.PY (basic API + dashboard + flash + add form)")
+    print(">>> LOADING APP.PY (dashboard + add/edit/delete)")
     app.run(debug=True)
