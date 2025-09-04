@@ -1,64 +1,128 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="d-flex align-items-center justify-content-between mb-3">
-  <h2 class="mb-0">Expenses</h2>
-  <span class="text-muted small">{{ expenses|length }} items</span>
-</div>
-
-<form method="post" action="{{ url_for('add_from_form') }}" class="row g-2 align-items-end mb-4">
-  <div class="col-12 col-md-2">
-    <label class="form-label">Amount</label>
-    <input type="number" step="0.01" name="amount" class="form-control" placeholder="0.00" required>
-  </div>
-  <div class="col-12 col-md-2">
-    <label class="form-label">Category</label>
-    <input type="text" name="category" class="form-control" placeholder="Food" required>
-  </div>
-  <div class="col-12 col-md-4">
-    <label class="form-label">Description</label>
-    <input type="text" name="description" class="form-control" placeholder="Details...">
-  </div>
-  <div class="col-12 col-md-2">
-    <label class="form-label">Date</label>
-    <input type="date" name="date" class="form-control">
-  </div>
-  <div class="col-12 col-md-2">
-    <button class="btn btn-primary w-100">Add</button>
-  </div>
-</form>
-
-<table class="table table-hover align-middle">
-  <thead class="table-light">
-    <tr>
-      <th>ID</th>
-      <th>Date</th>
-      <th>Amount</th>
-      <th>Category</th>
-      <th>Description</th>
-      <th style="width:140px;"></th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for e in expenses %}
-    <tr>
-      <td>{{ e[0] }}</td>
-      <td>{{ e[4] }}</td>
-      <td>{{ "%.2f"|format(e[1]) }}</td>
-      <td><span class="badge text-bg-secondary">{{ e[2] }}</span></td>
-      <td>{{ e[3] }}</td>
-      <td class="text-end">
-        <a href="{{ url_for('edit_page', expense_id=e[0]) }}" class="btn btn-sm btn-outline-primary">Edit</a>
-        <form method="post" action="{{ url_for('delete_from_form', expense_id=e[0]) }}" class="d-inline"
-              onsubmit="return confirm('Delete this expense?');">
-          <button class="btn btn-sm btn-outline-danger">Delete</button>
+<div class="row g-3">
+  <div class="col-12 col-lg-4">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <h5 class="card-title mb-3">Add Expense</h5>
+        <form method="post" action="{{ url_for('add_from_form') }}">
+          <div class="mb-2">
+            <label class="form-label">Amount</label>
+            <input type="number" step="0.01" class="form-control" name="amount" required>
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Category</label>
+            <input type="text" class="form-control" name="category" placeholder="Food, Transport..." required>
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Description</label>
+            <input type="text" class="form-control" name="description" placeholder="Details...">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Date</label>
+            <input type="date" class="form-control" name="date">
+            <div class="form-text">Empty = today</div>
+          </div>
+          <button class="btn btn-primary w-100">Add</button>
         </form>
-      </td>
-    </tr>
-    {% else %}
-    <tr>
-      <td colspan="6" class="text-center text-muted">No expenses yet</td>
-    </tr>
-    {% endfor %}
-  </tbody>
-</table>
+      </div>
+    </div>
+
+    <div class="card shadow-sm mt-3">
+      <div class="card-body">
+        <h5 class="card-title mb-3">Filters</h5>
+        <form method="get" action="{{ url_for('dashboard') }}">
+          <div class="mb-2">
+            <label class="form-label">Category</label>
+            <input type="text" class="form-control" name="category" value="{{ filters.category }}">
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Start</label>
+            <input type="date" class="form-control" name="start" value="{{ filters.start }}">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">End</label>
+            <input type="date" class="form-control" name="end" value="{{ filters.end }}">
+          </div>
+          <div class="d-flex gap-2">
+            <button class="btn btn-outline-primary w-100">Apply</button>
+            <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary w-100">Clear</a>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="card shadow-sm mt-3">
+      <div class="card-body">
+        <h6 class="card-title">Total</h6>
+        <div class="display-6">{{ "%.2f"|format(total) }}</div>
+      </div>
+    </div>
+
+    <div class="card shadow-sm mt-3">
+      <div class="card-body">
+        <h6 class="card-title">By Category</h6>
+        <ul class="list-group list-group-flush">
+          {% for c in totals_by_cat %}
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            <span>{{ c[0] }}</span>
+            <span class="badge text-bg-primary rounded-pill">{{ "%.2f"|format(c[1]) }}</span>
+          </li>
+          {% else %}
+          <li class="list-group-item text-muted">No data</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12 col-lg-8">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <div class="d-flex align-items-center justify-content-between">
+          <h5 class="card-title">Expenses</h5>
+          <span class="text-muted small">{{ expenses|length }} items</span>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead class="table-light">
+              <tr>
+                <th>ID</th>
+                <th>Date</th>
+                <th>Amount</th>
+                <th>Category</th>
+                <th>Description</th>
+                <th style="width:140px;"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for e in expenses %}
+              <tr>
+                <td>{{ e[0] }}</td>
+                <td>{{ e[4] }}</td>
+                <td>{{ "%.2f"|format(e[1]) }}</td>
+                <td><span class="badge text-bg-secondary">{{ e[2] }}</span></td>
+                <td>{{ e[3] }}</td>
+                <td class="text-end">
+                  <a href="{{ url_for('edit_page', expense_id=e[0]) }}" class="btn btn-sm btn-outline-primary">Edit</a>
+                  <form method="post" action="{{ url_for('delete_from_form', expense_id=e[0]) }}" class="d-inline"
+                        onsubmit="return confirm('Delete this expense?');">
+                    <button class="btn btn-sm btn-outline-danger">Delete</button>
+                  </form>
+                </td>
+              </tr>
+              {% else %}
+              <tr>
+                <td colspan="6" class="text-center text-muted py-4">No expenses yet</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
 {% endblock %}

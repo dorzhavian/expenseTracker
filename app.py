@@ -14,18 +14,50 @@ CORS(app)
 
 tracker = ExpenseTracker() if ExpenseTracker else None
 
+def compute_totals(rows):
+    total = sum(float(r[1]) for r in rows)
+    by_cat = {}
+    for r in rows:
+        by_cat[r[2]] = by_cat.get(r[2], 0.0) + float(r[1])
+    by_cat_list = sorted(by_cat.items(), key=lambda x: x[1], reverse=True)
+    return total, by_cat_list
+
 @app.route("/", methods=["GET"])
 def home():
     status = "ok" if tracker else "main.py import failed"
     return jsonify({"service": "ExpenseTracker API", "status": status}), 200
 
-# ---- HTML dashboard ----
 @app.route("/dashboard", methods=["GET"])
 def dashboard():
     if not tracker:
-        return render_template("index.html", expenses=[])
-    expenses = tracker.get_all_expenses()
-    return render_template("index.html", expenses=expenses)
+        return render_template("index.html", expenses=[], total=0.0, totals_by_cat=[], filters={"category":"", "start":"", "end":""})
+
+    category = (request.args.get("category") or "").strip()
+    start_date = (request.args.get("start") or "").strip()
+    end_date = (request.args.get("end") or "").strip()
+
+    if category:
+        expenses = tracker.get_expenses_by_category(category)
+    elif start_date and end_date:
+        try:
+            datetime.strptime(start_date, "%Y-%m-%d")
+            datetime.strptime(end_date, "%Y-%m-%d")
+            expenses = tracker.get_expenses_by_date_range(start_date, end_date)
+        except ValueError:
+            flash("Invalid date range. Use YYYY-MM-DD.", "danger")
+            return redirect(url_for("dashboard"))
+    else:
+        expenses = tracker.get_all_expenses()
+
+    total, totals_by_cat = compute_totals(expenses)
+
+    return render_template(
+        "index.html",
+        expenses=expenses,
+        total=total,
+        totals_by_cat=totals_by_cat,
+        filters={"category": category, "start": start_date, "end": end_date},
+    )
 
 @app.post("/add")
 def add_from_form():
@@ -115,7 +147,6 @@ def delete_from_form(expense_id):
     flash(f"Expense #{expense_id} deleted.", "success")
     return redirect(url_for("dashboard"))
 
-# ---- JSON API ----
 @app.route("/expenses", methods=["GET"])
 def get_expenses():
     if not tracker:
@@ -171,5 +202,5 @@ def delete_expense(expense_id):
     return jsonify({"message": "Expense deleted"}), 200
 
 if __name__ == "__main__":
-    print(">>> LOADING APP.PY (dashboard + add/edit/delete)")
+    print(">>> LOADING APP.PY (dashboard + filters + totals + add/edit/delete)")
     app.run(debug=True)
